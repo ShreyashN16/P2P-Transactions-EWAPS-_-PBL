@@ -1,0 +1,184 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: #050508;
+  --bg-surface: #0D0D14;
+  --bg-elevated: #13131F;
+  --bg-hover: #1A1A28;
+  --border: rgba(255, 180, 0, 0.12);
+  --border-bright: rgba(255, 180, 0, 0.35);
+  --amber: #FFB400;
+  --amber-dim: rgba(255, 180, 0, 0.7);
+  --amber-glow: rgba(255, 180, 0, 0.15);
+  --green: #00CC88;
+  --green-dim: rgba(0, 204, 136, 0.7);
+  --red: #FF3B3B;
+  --red-dim: rgba(255, 59, 59, 0.7);
+  --orange: #FF7A00;
+  --cyan: #00D4FF;
+  --text-primary: #F0EDE8;
+  --text-secondary: #9B9794;
+  --text-muted: #5C5A57;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-surface); }
+::-webkit-scrollbar-thumb { background: rgba(255, 180, 0, 0.3); border-radius: 2px; }
+
+/* Scanline overlay */
+.scanlines::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Grid noise texture */
+.noise-bg {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+}
+
+/* Terminal glow effect */
+.terminal-glow {
+  text-shadow: 0 0 8px rgba(255, 180, 0, 0.6), 0 0 20px rgba(255, 180, 0, 0.2);
+}
+.green-glow { text-shadow: 0 0 8px rgba(0, 204, 136, 0.6); }
+.red-glow { text-shadow: 0 0 8px rgba(255, 59, 59, 0.6); }
+
+/* Card styles */
+.card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--amber), transparent);
+  opacity: 0.4;
+}
+
+.card-critical::before { background: linear-gradient(90deg, transparent, var(--red), transparent); opacity: 0.7; }
+.card-high::before { background: linear-gradient(90deg, transparent, var(--orange), transparent); opacity: 0.6; }
+.card-medium::before { background: linear-gradient(90deg, transparent, #FFD700, transparent); opacity: 0.5; }
+.card-low::before { background: linear-gradient(90deg, transparent, var(--green), transparent); opacity: 0.4; }
+
+/* Blinking cursor */
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.cursor-blink { animation: blink 1.2s infinite; }
+
+/* Pulse animation */
+@keyframes pulse-amber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 180, 0, 0.4); }
+  50% { box-shadow: 0 0 0 6px rgba(255, 180, 0, 0); }
+}
+@keyframes pulse-red {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 59, 59, 0.6); }
+  50% { box-shadow: 0 0 0 8px rgba(255, 59, 59, 0); }
+}
+.pulse-amber { animation: pulse-amber 2s infinite; }
+.pulse-red { animation: pulse-red 1.5s infinite; }
+
+/* Fade in animations */
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes glitch {
+  0%, 100% { clip-path: none; transform: none; }
+  5% { clip-path: inset(40% 0 61% 0); transform: translate(-4px, 0); }
+  10% { clip-path: inset(92% 0 1% 0); transform: translate(4px, 0); }
+  15% { clip-path: none; transform: none; }
+}
+
+.anim-fade-up { animation: fadeInUp 0.4s ease forwards; }
+.anim-fade { animation: fadeIn 0.3s ease forwards; }
+.anim-slide-right { animation: slideInRight 0.4s ease forwards; }
+
+/* Data value highlighting */
+.data-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ticker bar */
+@keyframes tickerScroll {
+  from { transform: translateX(100%); }
+  to { transform: translateX(-100%); }
+}
+.ticker-animate { animation: tickerScroll 40s linear infinite; }
+
+/* Risk gauge arc */
+.risk-gauge-track { fill: none; stroke: rgba(255,255,255,0.05); }
+.risk-gauge-fill { fill: none; stroke-linecap: round; transition: stroke-dashoffset 1.2s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* Separator */
+.separator { border-color: var(--border); }
+
+/* Tag styles */
+.tag { font-family: var(--font-mono); font-size: 10px; padding: 2px 6px; border-radius: 2px; letter-spacing: 0.05em; font-weight: 600; }
+.tag-critical { background: rgba(255,59,59,0.15); color: #FF3B3B; border: 1px solid rgba(255,59,59,0.3); }
+.tag-high { background: rgba(255,122,0,0.15); color: #FF7A00; border: 1px solid rgba(255,122,0,0.3); }
+.tag-medium { background: rgba(255,215,0,0.15); color: #FFD700; border: 1px solid rgba(255,215,0,0.3); }
+.tag-low { background: rgba(0,204,136,0.12); color: #00CC88; border: 1px solid rgba(0,204,136,0.25); }
+
+/* Chart container */
+.chart-wrapper canvas { max-height: 100%; }
+
+/* Tooltip */
+.ewasp-tooltip {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-bright);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* Input styling */
+.terminal-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-bright);
+  color: var(--amber);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  outline: none;
+  padding: 6px 0;
+  width: 100%;
+}
+.terminal-input::placeholder { color: var(--text-muted); }
+
+/* Number counter animation */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.count-anim { animation: countUp 0.6s ease forwards; }

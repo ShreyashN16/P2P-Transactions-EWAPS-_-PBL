@@ -1,0 +1,23 @@
+# Environment and caches
+node_modules/
+.next/
+__pycache__/
+.venv/
+venv/
+env/
+.env
+
+# Build and logs
+*.log
+.DS_Store
+dist/
+build/
+coverage/
+
+# IDE
+.vscode/
+.idea/
+
+# General
+*.sqlite3
+*.db
