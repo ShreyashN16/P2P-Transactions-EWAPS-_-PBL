@@ -1,0 +1,28 @@
+{
+  "model": "IsolationForest",
+  "task": "anomaly_detection",
+  "features": [
+    "amount",
+    "hour_of_day",
+    "day_of_week",
+    "sender_account_age_days",
+    "receiver_account_age_days",
+    "sender_txn_count_30d",
+    "receiver_txn_count_30d",
+    "is_new_receiver",
+    "same_device_as_usual",
+    "velocity_1h",
+    "velocity_24h",
+    "cross_border"
+  ],
+  "n_features": 12,
+  "contamination": 0.035,
+  "total_samples": 100000,
+  "anomalies_flagged": 3500,
+  "metrics_vs_fraud_labels": {
+    "precision": 0.908,
+    "recall": 0.908,
+    "f1": 0.908
+  },
+  "trained_at": "2026-04-26T12:27:37.234965"
+}

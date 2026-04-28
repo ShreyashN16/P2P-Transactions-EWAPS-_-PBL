@@ -1,0 +1,40 @@
+{
+  "model": "LightGBM",
+  "task": "p2p_fraud_detection",
+  "features": [
+    "amount",
+    "hour_of_day",
+    "day_of_week",
+    "sender_account_age_days",
+    "receiver_account_age_days",
+    "sender_txn_count_30d",
+    "receiver_txn_count_30d",
+    "is_new_receiver",
+    "same_device_as_usual",
+    "velocity_1h",
+    "velocity_24h",
+    "cross_border"
+  ],
+  "n_features": 12,
+  "train_samples": 80000,
+  "test_samples": 20000,
+  "fraud_rate": 0.035,
+  "metrics": {
+    "accuracy": 1.0,
+    "auc_roc": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "confusion_matrix": [
+    [
+      19300,
+      0
+    ],
+    [
+      0,
+      700
+    ]
+  ],
+  "trained_at": "2026-04-26T12:27:32.364639"
+}

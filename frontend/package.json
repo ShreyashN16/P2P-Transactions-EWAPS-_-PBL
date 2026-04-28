@@ -1,7 +1,7 @@
 {
-  "name": "ewasp-frontend",
-  "version": "1.0.0",
-  "private": true,
+  "name": "p2p-ewas-frontend",
+  "version": "2.0.0",
+  "description": "P2P Transactions Early-Warning & Fraud Intelligence System",
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",

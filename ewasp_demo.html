@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>E-WASP | Enterprise Early-Warning & Signal Detection Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06060c;--bg2:#0e0e1a;--bg3:#141421;--bg4:#1c1c2e;
+  --amber:#ffb400;--amber2:rgba(255,180,0,.7);--ambergl:rgba(255,180,0,.12);
+  --green:#00cc88;--red:#ff3b3b;--orange:#ff7a00;--cyan:#00d4ff;
+  --border:rgba(255,180,0,.1);--border2:rgba(255,180,0,.28);
+  --t1:#f0ede8;--t2:#9b9794;--t3:#5c5a57;
+  --mono:'JetBrains Mono',monospace;--display:'Syne',sans-serif;
+}
+body{font-family:var(--mono);background:var(--bg);color:var(--t1);overflow-x:hidden;font-size:12px}
+
+/* Scanlines */
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.025) 2px,rgba(0,0,0,.025) 4px);pointer-events:none;z-index:9999}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:rgba(255,180,0,.25);border-radius:2px}
+
+/* Animations */
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes pulseR{0%,100%{box-shadow:0 0 0 0 rgba(255,59,59,.5)}50%{box-shadow:0 0 0 5px rgba(255,59,59,0)}}
+@keyframes pulseG{0%,100%{box-shadow:0 0 0 0 rgba(0,204,136,.4)}50%{box-shadow:0 0 0 5px rgba(0,204,136,0)}}
+@keyframes ticker{from{transform:translateX(100%)}to{transform:translateX(-200%)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glow{0%,100%{text-shadow:0 0 8px rgba(255,180,0,.6),0 0 20px rgba(255,180,0,.2)}50%{text-shadow:0 0 12px rgba(255,180,0,.9),0 0 30px rgba(255,180,0,.3)}}
+@keyframes countUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+.blink{animation:blink 1.2s infinite}
+.pulse-r{animation:pulseR 1.8s infinite}
+.pulse-g{animation:pulseG 2.2s infinite}
+.glow-anim{animation:glow 3s ease-in-out infinite}
+.fade-up{animation:fadeUp .35s ease forwards}
+
+/* Layout */
+#app{display:flex;flex-direction:column;min-height:100vh}
+#ticker{height:26px;background:#0a0a12;border-bottom:1px solid var(--border);overflow:hidden;display:flex;align-items:center;flex-shrink:0}
+#ticker-live{flex-shrink:0;padding:0 10px;background:var(--amber);height:100%;display:flex;align-items:center;font-size:9px;font-weight:700;color:#000;letter-spacing:.1em}
+#ticker-scroll{white-space:nowrap;animation:ticker 55s linear infinite;color:var(--t2);font-size:10px;padding:0 20px}
+#ticker-scroll span.up{color:var(--green)}
+#ticker-scroll span.dn{color:var(--red)}
+#ticker-scroll .sep{margin:0 24px;color:var(--t3)}
+
+header{background:#080812;border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.logo{font-family:var(--display);font-size:20px;font-weight:800;color:var(--amber);letter-spacing:-.02em}
+.logo-sub{font-size:8px;letter-spacing:.2em;color:var(--t3);margin-top:-2px}
+.nav-btn{background:none;border:none;color:var(--t3);font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:8px 14px;cursor:pointer;transition:all .15s;position:relative}
+.nav-btn:hover{color:var(--t1)}
+.nav-btn.active{color:var(--amber);border-bottom:1.5px solid var(--amber)}
+.nav-badge{position:absolute;top:4px;right:6px;background:var(--red);color:#fff;font-size:8px;border-radius:99px;padding:1px 4px;font-weight:700}
+.hdr-right{display:flex;align-items:center;gap:14px}
+.live-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border:1px solid rgba(0,204,136,.3);border-radius:2px;background:rgba(0,204,136,.06);font-size:9px;color:var(--green);letter-spacing:.1em;cursor:pointer;transition:all .2s}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+#clock{color:var(--amber);font-size:10px}
+
+main{flex:1;padding:16px 20px;overflow-y:auto}
+
+/* Panels */
+.panel{display:none}
+.panel.active{display:block}
+
+/* Grid systems */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+.g24{display:grid;grid-template-columns:2fr 4fr;gap:12px}
+.g42{display:grid;grid-template-columns:4fr 2fr;gap:12px}
+.g123{display:grid;grid-template-columns:1fr 2fr 1fr;gap:12px}
+@media(max-width:900px){.g4,.g3,.g2,.g24,.g42,.g123{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.g4,.g3,.g2,.g24,.g42,.g123{grid-template-columns:1fr}}
+
+/* Cards */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:3px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--amber),transparent);opacity:.3}
+.card-crit::before{background:linear-gradient(90deg,transparent,var(--red),transparent);opacity:.7}
+.card-high::before{background:linear-gradient(90deg,transparent,var(--orange),transparent);opacity:.6}
+.card-med::before{background:linear-gradient(90deg,transparent,#ffd700,transparent);opacity:.5}
+.card-low::before{background:linear-gradient(90deg,transparent,var(--green),transparent);opacity:.4}
+.card-body{padding:14px}
+.card-title{font-family:var(--display);font-size:11px;font-weight:600;color:var(--t2);letter-spacing:.08em;margin-bottom:2px;text-transform:uppercase}
+
+/* Tags */
+.tag{display:inline-block;font-size:9px;padding:2px 6px;border-radius:2px;font-weight:700;letter-spacing:.06em}
+.tc{background:rgba(255,59,59,.14);color:#ff3b3b;border:1px solid rgba(255,59,59,.3)}
+.th2{background:rgba(255,122,0,.14);color:#ff7a00;border:1px solid rgba(255,122,0,.3)}
+.tm{background:rgba(255,215,0,.12);color:#ffd700;border:1px solid rgba(255,215,0,.28)}
+.tl{background:rgba(0,204,136,.1);color:#00cc88;border:1px solid rgba(0,204,136,.22)}
+
+/* Risk Gauge */
+#gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:16px 0}
+#gauge-label{font-family:var(--display);font-size:10px;letter-spacing:.18em;color:var(--t3);margin-bottom:8px}
+#gauge-score{font-family:var(--display);font-size:42px;font-weight:800;color:var(--orange);margin-top:-4px}
+#gauge-sev{display:flex;align-items:center;gap:6px;margin-top:2px}
+#sev-dot{width:7px;height:7px;border-radius:50%;background:var(--orange)}
+
+/* Alert cards */
+.alert-card{cursor:pointer;transition:background .15s;margin-bottom:10px}
+.alert-card:hover .card{background:var(--bg3)}
+.alert-hdr{display:flex;align-items:flex-start;gap:10px}
+.alert-bar{width:3px;align-self:stretch;border-radius:2px;flex-shrink:0}
+.alert-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+.alert-title{font-family:var(--display);font-size:12px;font-weight:600;color:var(--t1);line-height:1.4}
+.alert-impact{font-size:11px;font-weight:700;font-family:var(--mono);white-space:nowrap}
+.alert-body{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06);display:none}
+.alert-body.open{display:block;animation:fadeUp .2s ease}
+.alert-explanation{color:var(--t2);font-size:10px;line-height:1.7;margin-bottom:10px}
+.reco{display:flex;gap:6px;margin-bottom:5px;font-size:10px;color:var(--t1)}
+.reco-arrow{color:var(--orange);flex-shrink:0}
+
+/* KPI cards */
+.kpi{padding:12px 14px}
+.kpi-icon{font-size:16px;margin-bottom:6px}
+.kpi-lbl{font-size:9px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase}
+.kpi-val{font-family:var(--display);font-size:24px;font-weight:800;line-height:1.1}
+.kpi-sub{font-size:9px;color:var(--t3);margin-top:2px}
+
+/* Region bars */
+.region-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.region-name{width:72px;font-size:10px;color:var(--t2);flex-shrink:0}
+.region-track{flex:1;height:14px;background:rgba(255,255,255,.04);border-radius:2px;overflow:hidden}
+.region-fill{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.region-score{width:28px;text-align:right;font-size:10px;font-weight:700;flex-shrink:0}
+.region-tag{width:52px;flex-shrink:0}
+
+/* SHAP bar */
+.shap-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.shap-label{width:145px;font-size:9px;color:var(--t2);flex-shrink:0;text-align:right}
+.shap-track{flex:1;height:12px;background:rgba(255,255,255,.04);border-radius:1px;overflow:hidden;position:relative}
+.shap-fill{height:100%;border-radius:1px;transition:width .9s cubic-bezier(.4,0,.2,1)}
+.shap-val{width:36px;font-size:9px;font-weight:700;text-align:right;flex-shrink:0}
+
+/* Vendor row */
+.vendor-row{background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:12px 14px;margin-bottom:8px;transition:border-color .15s}
+.vendor-row:hover{border-color:var(--border2)}
+.vendor-hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.vendor-name{font-family:var(--display);font-size:13px;font-weight:700}
+.vendor-bar-wrap{position:relative;height:8px;background:rgba(255,255,255,.05);border-radius:1px;overflow:hidden}
+.vendor-bar{height:100%;border-radius:1px;transition:width .9s cubic-bezier(.4,0,.2,1)}
+
+/* Signal grid */
+.sig-card{padding:12px}
+.sig-icon{font-size:18px;margin-bottom:8px}
+.sig-lbl{font-size:8px;color:var(--t3);letter-spacing:.12em;text-transform:uppercase;margin-bottom:2px}
+.sig-val{font-size:22px;font-weight:700;font-family:var(--mono);line-height:1.1}
+.sig-unit{font-size:9px;color:var(--t3);margin-left:2px}
+.sig-detail{font-size:9px;color:var(--t3);margin-top:4px;border-top:1px solid rgba(255,255,255,.04);padding-top:4px}
+.sig-sub{font-size:9px;margin-top:2px}
+
+/* Ask EWASP */
+#chat-history{min-height:80px;max-height:160px;overflow-y:auto;margin-bottom:10px}
+.chat-q{display:flex;gap:6px;margin-bottom:6px}
+.chat-prompt{color:var(--amber);font-size:11px}
+.chat-q-text{color:var(--t2);font-size:10px}
+.chat-a{padding-left:14px;border-left:2px solid rgba(255,180,0,.2);margin-bottom:8px}
+.chat-a-text{font-size:10px;color:var(--t1);line-height:1.7;white-space:pre-wrap}
+.quick-btns{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.quick-btn{font-family:var(--mono);font-size:9px;padding:3px 8px;border:1px solid rgba(255,180,0,.18);border-radius:2px;color:var(--t2);background:none;cursor:pointer;transition:all .15s;letter-spacing:.04em}
+.quick-btn:hover{border-color:var(--amber);color:var(--amber)}
+#ask-input-row{display:flex;align-items:center;gap:8px;border-top:1px solid rgba(255,180,0,.12);padding-top:10px}
+#ask-prompt{color:var(--amber);font-size:12px}
+#ask-input{background:none;border:none;border-bottom:1px solid rgba(255,180,0,.3);color:var(--amber);font-family:var(--mono);font-size:11px;outline:none;flex:1;padding:4px 0}
+#ask-input::placeholder{color:var(--t3)}
+#ask-run{background:none;border:1px solid rgba(255,180,0,.25);color:var(--amber);font-family:var(--mono);font-size:9px;padding:4px 10px;cursor:pointer;border-radius:2px;letter-spacing:.08em;transition:all .15s}
+#ask-run:hover{background:rgba(255,180,0,.08)}
+
+/* Forecast panel */
+.forecast-stat{padding:12px}
+.fc-lbl{font-size:9px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.fc-val{font-family:var(--display);font-size:28px;font-weight:800}
+
+/* Scenario */
+.scenario-control{margin-bottom:14px}
+.sc-label{font-size:9px;color:var(--t2);letter-spacing:.08em;margin-bottom:5px;display:flex;justify-content:space-between}
+input[type=range]{width:100%;accent-color:var(--amber);height:3px}
+.sc-result{margin-top:12px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:3px}
+.sc-score{font-family:var(--display);font-size:36px;font-weight:800}
+.sc-arrow{font-size:14px;font-weight:600;margin-left:8px}
+
+/* Footer */
+footer{background:#060610;border-top:1px solid var(--border);padding:6px 20px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+footer span{font-size:8px;color:var(--t3);letter-spacing:.1em}
+
+/* Chart containers */
+.chart-wrap{position:relative;width:100%;overflow:hidden}
+
+/* Separator */
+.section-title{font-family:var(--display);font-size:13px;font-weight:700;color:var(--t1);margin-bottom:2px}
+.section-sub{font-size:9px;color:var(--t3);letter-spacing:.08em;margin-bottom:12px}
+
+/* Tabs within panels */
+.sub-tabs{display:flex;gap:2px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:0}
+.sub-tab{background:none;border:none;font-family:var(--mono);font-size:9px;color:var(--t3);padding:6px 12px;cursor:pointer;letter-spacing:.1em;border-bottom:1.5px solid transparent;margin-bottom:-1px;transition:all .15s}
+.sub-tab.active{color:var(--amber);border-bottom-color:var(--amber)}
+.sub-tab:hover:not(.active){color:var(--t1)}
+
+/* Gauge SVG */
+#gauge-svg path.track{fill:none;stroke:rgba(255,255,255,.06);stroke-width:10;stroke-linecap:round}
+#gauge-svg path.fill{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1),stroke .6s}
+
+/* Component comps */
+.comp-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.comp-lbl{font-size:9px;color:var(--t3);letter-spacing:.08em}
+.comp-val{font-size:10px;font-weight:700}
+.comp-bar{height:3px;background:rgba(255,255,255,.06);border-radius:1px;margin-top:3px;overflow:hidden}
+.comp-bar-fill{height:100%;border-radius:1px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- Ticker -->
+<div id="ticker">
+  <div id="ticker-live">LIVE</div>
+  <div id="ticker-scroll"></div>
+</div>
+
+<!-- Header -->
+<header>
+  <div>
+    <div class="logo glow-anim">E-WASP</div>
+    <div class="logo-sub">ENTERPRISE EARLY-WARNING &amp; SIGNAL DETECTION PLATFORM</div>
+  </div>
+  <nav style="display:flex;align-items:center">
+    <button class="nav-btn active" onclick="switchTab('overview')">◉ OVERVIEW</button>
+    <button class="nav-btn" onclick="switchTab('alerts')">⚠ ALERTS<span class="nav-badge">2</span></button>
+    <button class="nav-btn" onclick="switchTab('vendors')">⬡ VENDORS</button>
+    <button class="nav-btn" onclick="switchTab('signals')">⟊ SIGNALS</button>
+    <button class="nav-btn" onclick="switchTab('forecast')">⌬ FORECAST</button>
+    <button class="nav-btn" onclick="switchTab('scenario')">◈ SIMULATE</button>
+  </nav>
+  <div class="hdr-right">
+    <span id="clock"></span>
+    <div class="live-btn"><div class="live-dot pulse-g"></div> LIVE FEED</div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+
+<!-- ── OVERVIEW ── -->
+<div id="panel-overview" class="panel active">
+  <div style="display:grid;grid-template-columns:220px 1fr;gap:12px;margin-bottom:12px">
+    <!-- Gauge Card -->
+    <div class="card" style="grid-row:span 2">
+      <div class="card-body">
+        <div class="card-title">Overall Risk Score</div>
+        <div id="gauge-wrap">
+          <svg id="gauge-svg" width="180" height="108" viewBox="0 0 180 108" style="overflow:visible">
+            <path class="track" d="M18 96 A72 72 0 0 1 162 96"/>
+            <path class="fill" id="gauge-arc" d="M18 96 A72 72 0 0 1 162 96" stroke="#ff7a00" stroke-dasharray="226" stroke-dashoffset="60"/>
+            <!-- Zone dots -->
+            <circle cx="18" cy="96" r="2.5" fill="rgba(255,255,255,.2)"/>
+            <circle cx="90" cy="24" r="2.5" fill="rgba(255,255,255,.2)"/>
+            <circle cx="162" cy="96" r="2.5" fill="rgba(255,255,255,.2)"/>
+            <text x="12" y="108" font-family="JetBrains Mono" font-size="8" fill="#5c5a57">LOW</text>
+            <text x="138" y="108" font-family="JetBrains Mono" font-size="8" fill="#5c5a57">CRIT</text>
+          </svg>
+          <div id="gauge-score">61.4</div>
+          <div id="gauge-sev">
+            <div id="sev-dot" class="pulse-r"></div>
+            <span style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--orange);letter-spacing:.12em">HIGH RISK</span>
+          </div>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:10px;margin-top:4px">
+          <div class="comp-row"><span class="comp-lbl">ANOMALY LAYER</span><span class="comp-val" style="color:#ff7a00">73%</span></div>
+          <div class="comp-bar"><div class="comp-bar-fill" style="width:73%;background:#ff7a00"></div></div>
+          <div class="comp-row" style="margin-top:8px"><span class="comp-lbl">SIGNAL FUSION</span><span class="comp-val" style="color:#ffd700">58%</span></div>
+          <div class="comp-bar"><div class="comp-bar-fill" style="width:58%;background:#ffd700"></div></div>
+          <div class="comp-row" style="margin-top:8px"><span class="comp-lbl">FORECAST DEV.</span><span class="comp-val" style="color:#00cc88">41%</span></div>
+          <div class="comp-bar"><div class="comp-bar-fill" style="width:41%;background:#00cc88"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Grid -->
+    <div class="g4">
+      <div class="card kpi">
+        <div class="kpi-icon">🚨</div>
+        <div class="kpi-lbl">Critical Alerts</div>
+        <div class="kpi-val" style="color:var(--red)">2</div>
+        <div class="kpi-sub">Vendor_C · Logistics</div>
+      </div>
+      <div class="card kpi">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-lbl">Revenue at Risk</div>
+        <div class="kpi-val" style="color:var(--orange)">₹148L</div>
+        <div class="kpi-sub">30-day horizon</div>
+      </div>
+      <div class="card kpi">
+        <div class="kpi-icon">🏭</div>
+        <div class="kpi-lbl">Vendors at Risk</div>
+        <div class="kpi-val" style="color:var(--orange)">2</div>
+        <div class="kpi-sub">Vendor_C · Vendor_H</div>
+      </div>
+      <div class="card kpi">
+        <div class="kpi-icon">🎯</div>
+        <div class="kpi-lbl">ML Confidence</div>
+        <div class="kpi-val" style="color:var(--green)">91%</div>
+        <div class="kpi-sub">Avg · 5 models</div>
+      </div>
+      <div class="card kpi">
+        <div class="kpi-icon">👥</div>
+        <div class="kpi-lbl">Churn Risk</div>
+        <div class="kpi-val" style="color:#ffd700">14</div>
+        <div class="kpi-sub">Tier-1 accounts</div>
+      </div>
+      <div class="card kpi">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-lbl">Active Signals</div>
+        <div class="kpi-val" style="color:var(--cyan)">24</div>
+        <div class="kpi-sub">8 regions · 3 layers</div>
+      </div>
+      <div class="card kpi">
+        <div class="kpi-icon">⚡</div>
+        <div class="kpi-lbl">Forecast Accuracy</div>
+        <div class="kpi-val" style="color:var(--green)">91.3%</div>
+        <div class="kpi-sub">Prophet MAPE</div>
+      </div>
+      <div class="card kpi">
+        <div class="kpi-icon">🌍</div>
+        <div class="kpi-lbl">Ext. Sources</div>
+        <div class="kpi-val" style="color:var(--t2)">6</div>
+        <div class="kpi-sub">Weather·News·FX·Trends</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="g42" style="margin-bottom:12px">
+    <div class="card">
+      <div class="card-body">
+        <div class="section-title">Revenue Intelligence</div>
+        <div class="section-sub">90-DAY TREND · ANOMALY DETECTION · ISOLATION FOREST</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="rev-chart"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <div class="section-title">Risk Radar</div>
+        <div class="section-sub">MULTI-DIMENSION RISK PROFILE</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="radar-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Region + Ask -->
+  <div class="g2">
+    <div class="card">
+      <div class="card-body">
+        <div class="section-title">Regional Risk Index</div>
+        <div class="section-sub">INDIA · COMPOSITE SCORE 0–100</div>
+        <div id="region-bars"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-family:var(--display);font-size:13px;font-weight:700;color:var(--amber)">ASK E-WASP</span>
+          <span style="font-size:9px;color:var(--t3)">AI RISK INTELLIGENCE</span>
+          <div class="live-dot pulse-g" style="margin-left:auto"></div>
+        </div>
+        <div id="chat-history"></div>
+        <div class="quick-btns">
+          <button class="quick-btn" onclick="askEWASP('vendor risk?')">vendor risk?</button>
+          <button class="quick-btn" onclick="askEWASP('forecast 30d')">forecast 30d</button>
+          <button class="quick-btn" onclick="askEWASP('worst region?')">worst region?</button>
+          <button class="quick-btn" onclick="askEWASP('fuel impact?')">fuel impact?</button>
+          <button class="quick-btn" onclick="askEWASP('urgent actions?')">urgent actions?</button>
+        </div>
+        <div id="ask-input-row">
+          <span id="ask-prompt">&gt;</span>
+          <input id="ask-input" placeholder="ask e-wasp anything..." onkeydown="if(event.key==='Enter')askEWASP(this.value)"/>
+          <button id="ask-run" onclick="askEWASP(document.getElementById('ask-input').value)">RUN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ALERTS ── -->
+<div id="panel-alerts" class="panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div>
+      <div class="section-title">Alert Intelligence Center</div>
+      <div class="section-sub">ML-POWERED RISK ALERTS WITH SHAP EXPLAINABILITY · 8 ACTIVE</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <span class="tag tc">2 CRITICAL</span>
+      <span class="tag th2">2 HIGH</span>
+      <span class="tag tm">2 MEDIUM</span>
+      <span class="tag tl">2 LOW</span>
+    </div>
+  </div>
+  <div id="alerts-list"></div>
+</div>
+
+<!-- ── VENDORS ── -->
+<div id="panel-vendors" class="panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+    <div>
+      <div class="section-title">Vendor Risk Intelligence</div>
+      <div class="section-sub">AI-SCORED RELIABILITY · FAILURE PROBABILITY · 15 VENDORS TRACKED</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <span class="tag tc">2 CRITICAL</span>
+      <span class="tag th2">1 HIGH</span>
+    </div>
+  </div>
+  <div id="vendors-list"></div>
+</div>
+
+<!-- ── SIGNALS ── -->
+<div id="panel-signals" class="panel">
+  <div style="margin-bottom:14px">
+    <div class="section-title">External Signal Intelligence</div>
+    <div class="section-sub">REAL-TIME MACRO &amp; MARKET SIGNALS · 6 DATA SOURCES</div>
+  </div>
+  <div class="g4" style="margin-bottom:12px" id="signal-grid"></div>
+  <div class="card">
+    <div class="card-body">
+      <div class="section-title">Signal Fusion Engine</div>
+      <div class="section-sub">XGBOOST WEIGHTED CONTRIBUTION · SHAP VALUES · UNIFIED RISK PROBABILITY</div>
+      <div id="shap-bars"></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="card-body">
+      <div class="section-title">Risk Score Trend</div>
+      <div class="section-sub">60-DAY COMPOSITE RISK SCORE</div>
+      <div class="chart-wrap" style="height:180px"><canvas id="risk-trend-chart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FORECAST ── -->
+<div id="panel-forecast" class="panel">
+  <div style="margin-bottom:14px">
+    <div class="section-title">Forecast Intelligence</div>
+    <div class="section-sub">PROPHET ML · 30-DAY HORIZON · 80% CONFIDENCE INTERVALS</div>
+  </div>
+  <div class="g3" style="margin-bottom:12px">
+    <div class="card forecast-stat">
+      <div class="fc-lbl">30-Day Revenue Forecast</div>
+      <div class="fc-val" style="color:var(--orange)">−4.2%</div>
+      <div style="font-size:9px;color:rgba(255,122,0,.6);margin-top:2px">Below current trend</div>
+    </div>
+    <div class="card forecast-stat">
+      <div class="fc-lbl">Festive Recovery (Oct–Nov)</div>
+      <div class="fc-val" style="color:var(--green)">+18.0%</div>
+      <div style="font-size:9px;color:rgba(0,204,136,.6);margin-top:2px">87% confidence</div>
+    </div>
+    <div class="card forecast-stat">
+      <div class="fc-lbl">Model Accuracy (MAPE)</div>
+      <div class="fc-val" style="color:var(--green)">91.3%</div>
+      <div style="font-size:9px;color:rgba(0,204,136,.6);margin-top:2px">Prophet + ARIMA ensemble</div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-body">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:8px">
+        <div>
+          <div class="section-title">30-Day Revenue Forecast</div>
+          <div class="section-sub">HISTORICAL (60D) + FORECAST (30D) WITH CONFIDENCE BAND</div>
+        </div>
+        <select id="region-select" style="background:var(--bg3);border:1px solid var(--border2);color:var(--amber);font-family:var(--mono);font-size:9px;padding:4px 8px;outline:none;border-radius:2px;letter-spacing:.06em" onchange="updateForecastChart()">
+          <option>Mumbai</option><option>Delhi</option><option>Bangalore</option>
+          <option>Chennai</option><option>Kolkata</option><option>Hyderabad</option>
+          <option>Pune</option><option>Ahmedabad</option>
+        </select>
+      </div>
+      <div class="chart-wrap" style="height:260px"><canvas id="forecast-chart"></canvas></div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-body">
+        <div class="section-title">Category Risk Ranking</div>
+        <div class="section-sub">30-DAY FORECAST RISK BY CATEGORY</div>
+        <div class="chart-wrap" style="height:160px"><canvas id="cat-chart"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <div class="section-title">Anomaly Frequency (30D)</div>
+        <div class="section-sub">ANOMALY DETECTION · WEEKLY AGGREGATED</div>
+        <div class="chart-wrap" style="height:160px"><canvas id="anom-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SCENARIO ── -->
+<div id="panel-scenario" class="panel">
+  <div style="margin-bottom:14px">
+    <div class="section-title">Scenario Simulation Engine</div>
+    <div class="section-sub">WHAT-IF ANALYSIS · SHOCK MODELLING · IMPACT ESTIMATION</div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-body">
+        <div class="section-title" style="margin-bottom:14px">Configure Shock Parameters</div>
+        <div class="scenario-control">
+          <div class="sc-label"><span>FUEL PRICE (₹/L)</span><span id="fuel-val" style="color:var(--amber)">95</span></div>
+          <input type="range" min="80" max="130" value="95" id="sc-fuel" oninput="updateScenario()"/>
+        </div>
+        <div class="scenario-control">
+          <div class="sc-label"><span>WEATHER DISRUPTION INDEX</span><span id="weather-val" style="color:var(--amber)">0.20</span></div>
+          <input type="range" min="0" max="100" value="20" id="sc-weather" oninput="updateScenario()"/>
+        </div>
+        <div class="scenario-control">
+          <div class="sc-label"><span>NEWS SENTIMENT (−1 to +1)</span><span id="sentiment-val" style="color:var(--amber)">0.00</span></div>
+          <input type="range" min="-100" max="100" value="0" id="sc-sentiment" oninput="updateScenario()"/>
+        </div>
+        <div class="scenario-control">
+          <div class="sc-label"><span>USD/INR RATE</span><span id="forex-val" style="color:var(--amber)">83.0</span></div>
+          <input type="range" min="78" max="90" step="0.1" value="83" id="sc-forex" oninput="updateScenario()"/>
+        </div>
+        <div class="scenario-control">
+          <div class="sc-label"><span>VENDOR RELIABILITY (%)</span><span id="vrel-val" style="color:var(--amber)">80</span></div>
+          <input type="range" min="20" max="100" value="80" id="sc-vrel" oninput="updateScenario()"/>
+        </div>
+        <div class="scenario-control">
+          <div class="sc-label"><span>DEMAND TRENDS SCORE</span><span id="trends-val" style="color:var(--amber)">60</span></div>
+          <input type="range" min="10" max="100" value="60" id="sc-trends" oninput="updateScenario()"/>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <div class="section-title" style="margin-bottom:14px">Simulation Results</div>
+        <div class="sc-result">
+          <div style="font-size:9px;color:var(--t3);letter-spacing:.1em;margin-bottom:4px">SIMULATED RISK SCORE</div>
+          <div style="display:flex;align-items:baseline;gap:6px">
+            <div class="sc-score" id="sc-score" style="color:var(--orange)">45.0</div>
+            <div class="sc-arrow" id="sc-arrow" style="color:var(--t3)">→ baseline</div>
+          </div>
+          <div id="sc-severity" class="tag tm" style="margin-top:6px">MEDIUM</div>
+        </div>
+        <div style="margin-top:14px">
+          <div style="font-size:9px;color:var(--t3);letter-spacing:.08em;margin-bottom:8px">ESTIMATED REVENUE IMPACT (30D)</div>
+          <div id="sc-impact" style="font-family:var(--display);font-size:22px;font-weight:700;color:var(--orange)">₹0L</div>
+        </div>
+        <div style="margin-top:14px">
+          <div style="font-size:9px;color:var(--t3);letter-spacing:.08em;margin-bottom:8px">KEY RISK DRIVERS</div>
+          <div id="sc-drivers"></div>
+        </div>
+        <div style="margin-top:14px">
+          <div style="font-size:9px;color:var(--t3);letter-spacing:.08em;margin-bottom:8px">RECOMMENDED ACTIONS</div>
+          <div id="sc-recos"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- Footer -->
+<footer>
+  <span>E-WASP v1.0.0 · ISOLATION FOREST + PROPHET + XGBOOST + SHAP · 5-LAYER AI ENGINE</span>
+  <span>8 REGIONS · 24 ACTIVE SIGNALS · 91.3% ML ACCURACY · DATA FRESHNESS &lt;5MIN</span>
+</footer>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────
+const REGIONS = ["Mumbai","Delhi","Bangalore","Chennai","Kolkata","Hyderabad","Pune","Ahmedabad"];
+const REGION_RISK = {Mumbai:45,Delhi:58,Bangalore:32,Chennai:71,Kolkata:63,Hyderabad:41,Pune:38,Ahmedabad:55};
+const SEV = {
+  critical:{color:"#ff3b3b",cls:"tc",label:"CRITICAL"},
+  high:{color:"#ff7a00",cls:"th2",label:"HIGH"},
+  medium:{color:"#ffd700",cls:"tm",label:"MEDIUM"},
+  low:{color:"#00cc88",cls:"tl",label:"LOW"},
+};
+function getSev(s){return s>=80?"critical":s>=60?"high":s>=40?"medium":"low"}
+
+const ALERTS=[
+  {id:"ALT-001",title:"Vendor Reliability Crisis — Vendor_C",sev:"critical",area:"Supply Chain",
+   explanation:"Vendor_C has shown 47% on-time delivery failure over last 30 days, with defect rate climbing to 18.3%. Based on trajectory analysis, probability of complete supply disruption within 14 days is 73%. Isolation Forest anomaly score: 0.91.",
+   impact:42,conf:91,
+   actions:["Activate Vendor_F as secondary source immediately","Place emergency buffer stock order (15% of monthly volume)","Initiate vendor audit and performance improvement plan"],
+   ts:"2h ago"},
+  {id:"ALT-002",title:"Monsoon Logistics Disruption — Western Corridor",sev:"critical",area:"Logistics",
+   explanation:"Weather models predict 340mm+ rainfall in Mumbai-Pune corridor over next 7 days. Historical data: 28% logistics delay during similar events. Pre-Diwali inventory build is at immediate risk. Disruption index: 0.74.",
+   impact:28,conf:84,
+   actions:["Pre-position 20% excess inventory at Pune DC","Activate rail freight alternatives for long-haul routes","Issue advance delivery schedule to all Modern Trade accounts"],
+   ts:"5h ago"},
+  {id:"ALT-003",title:"Demand Anomaly — FMCG-Beverage, Chennai",sev:"high",area:"Sales",
+   explanation:"Revenue dropped 38% below 30-day rolling average. Google Trends: category interest down 22 points. LOF outlier score: -1.82. Possible competitive entry or distribution failure detected.",
+   impact:17,conf:78,
+   actions:["Emergency retailer audit in Chennai metro","Review competitive SKU launches (last 45 days)","Accelerate trade marketing spend in affected region"],
+   ts:"8h ago"},
+  {id:"ALT-004",title:"Fuel Cost Spike — Procurement Exposure",sev:"high",area:"Procurement",
+   explanation:"Diesel +8.7% in 21 days, pushing logistics cost index to 1.28. Current freight contracts expire in 45 days. Locking rates now could save ₹12–18L/month.",
+   impact:12,conf:88,
+   actions:["Lock freight rates for 6 months before contract expiry","Evaluate in-house fleet leasing for top-5 routes"],
+   ts:"12h ago"},
+  {id:"ALT-005",title:"Customer Churn Signal — Tier-1 Accounts, Delhi",sev:"medium",area:"Customer",
+   explanation:"14 Tier-1 customers: order frequency down 31%, payment delays >20 days, basket size declining. Churn model confidence: 71%. Combined annual revenue at risk: ₹38L.",
+   impact:38,conf:71,
+   actions:["Deploy KAMs for 1-on-1 business reviews within 48h","Offer flexible payment terms (90 days)","Design targeted loyalty program for at-risk accounts"],
+   ts:"18h ago"},
+  {id:"ALT-006",title:"Negative News Sentiment — FMCG Sector",sev:"medium",area:"Market Intel",
+   explanation:"67 negative articles about FMCG sector in 72 hours. Topics: rural demand slowdown, input cost inflation, urban consumption fatigue. NLP sentiment score: −0.44.",
+   impact:9,conf:65,
+   actions:["Review Q4 revenue guidance assumptions","Increase rural distribution touchpoints"],
+   ts:"24h ago"},
+  {id:"ALT-007",title:"Inventory Imbalance — Pre-Festive Build",sev:"low",area:"Inventory",
+   explanation:"Current inventory build for Diwali season is tracking 12% below recommended levels in 3 regions. Historical data: stockouts during peak week carry 2.3× revenue loss multiplier.",
+   impact:6,conf:82,
+   actions:["Accelerate procurement for Diwali SKUs by 2 weeks","Prioritize Mumbai and Delhi warehouse replenishment"],
+   ts:"36h ago"},
+  {id:"ALT-008",title:"FX Exposure Alert — Import Raw Materials",sev:"low",area:"Finance",
+   explanation:"USD/INR crossed 84.2, a 3-month high. Import raw material costs up 4.1% in effective terms. Hedging window available before quarterly settlement.",
+   impact:5,conf:76,
+   actions:["Consider 3-month forward contract for USD exposure","Explore domestic substitute suppliers for 2 key materials"],
+   ts:"48h ago"},
+];
+
+const VENDORS=[
+  {id:"Vendor_C",rel:52,defect:18.3,sev:"critical",trend:"↓",reco:"Immediate replacement required"},
+  {id:"Vendor_H",rel:48,defect:21.1,sev:"critical",trend:"↓",reco:"Critical — activate alternatives now"},
+  {id:"Vendor_M",rel:61,defect:9.4,sev:"high",trend:"↓",reco:"Close monitoring — schedule audit"},
+  {id:"Vendor_F",rel:78,defect:4.7,sev:"medium",trend:"→",reco:"Monitor weekly performance"},
+  {id:"Vendor_K",rel:83,defect:3.2,sev:"medium",trend:"↑",reco:"Standard monitoring"},
+  {id:"Vendor_A",rel:87,defect:2.1,sev:"low",trend:"→",reco:"Good standing"},
+  {id:"Vendor_D",rel:92,defect:1.4,sev:"low",trend:"→",reco:"Preferred vendor"},
+  {id:"Vendor_B",rel:95,defect:0.8,sev:"low",trend:"↑",reco:"Strategic partner — top performer"},
+];
+
+const MOCK_ANSWERS={
+  "vendor":"🔴 CRITICAL: Vendor_C (reliability: 52%) and Vendor_H (48%) are in the red zone. Combined procurement exposure: ₹4.8Cr. Isolation Forest anomaly score both above 0.88. Recommend activating Vendor_F and Vendor_K as replacements within 72 hours. Estimated supply disruption probability: 73% within 14 days.",
+  "forecast":"📊 30-day forecast: Revenue projected −4.2% from current run-rate. FMCG-Beverage shows highest deviation (−8.1%). Chennai region is the primary drag. Festive season (Oct-Nov) recovery: +18% above baseline. Prophet model MAPE: 6.3%. ARIMA fallback validates direction.",
+  "region":"🗺️ Worst regions: Chennai (71/100, HIGH) — demand anomaly + competitive pressure. Kolkata (63/100, HIGH) — vendor delays cascading to stockouts. Delhi (58/100, MEDIUM) — customer churn signals elevated. Bangalore is safest (32/100, LOW) — consider using as inventory buffer hub.",
+  "fuel":"⛽ Diesel at ₹103.4/L (+8.7% in 21 days). Logistics cost index: 1.28 vs base of 1.00. Freight contracts expire in 45 days — locking now saves ₹1.4–2.1Cr annually. XGBoost SHAP value for logistics_cost_index: 0.18 (3rd largest contributor to risk score).",
+  "urgent":"🚨 TOP 3 URGENT ACTIONS:\n1. Replace Vendor_C immediately — 14-day window before stockout (critical)\n2. Pre-position inventory before monsoon surge — 7-day window (critical)\n3. KAM intervention for 14 at-risk Delhi Tier-1 accounts (medium)\n\nTotal revenue at risk if unaddressed: ₹8.5Cr (30-day horizon).",
+  "churn":"👥 14 Tier-1 customers in Delhi NCR showing churn probability >67%. Signals: order frequency down 31%, payment delay avg 23 days, basket size declining. XGBoost churn model confidence: 71%. Combined at-risk ARR: ₹38L. Recommend KAM call campaign + 90-day flexible payment terms.",
+};
+
+// ─────────────────────────────────────────────
+// TIME SERIES GENERATORS
+// ─────────────────────────────────────────────
+function genSeries(n,base,vol=0.06,anomProb=0.03){
+  const v=[];let val=base;
+  for(let i=0;i<n;i++){
+    val=val*(1+(Math.random()-.48)*vol);
+    val=Math.max(0,val);
+    const isAnom=Math.random()<anomProb;
+    v.push({val:Math.round(val),isAnom});
+  }
+  return v;
+}
+function rolling(arr,w=7){
+  return arr.map((_,i)=>{
+    const slice=arr.slice(Math.max(0,i-w+1),i+1);
+    return Math.round(slice.reduce((a,b)=>a+b,0)/slice.length);
+  });
+}
+function genDates(n){
+  const d=[];const now=new Date();
+  for(let i=n-1;i>=0;i--){const dt=new Date(now);dt.setDate(dt.getDate()-i);d.push(dt.toLocaleDateString('en-IN',{month:'short',day:'numeric'}));}
+  return d;
+}
+
+// ─────────────────────────────────────────────
+// CLOCK
+// ─────────────────────────────────────────────
+function updateClock(){
+  document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour12:false})+' IST';
+}
+setInterval(updateClock,1000);updateClock();
+
+// ─────────────────────────────────────────────
+// TICKER
+// ─────────────────────────────────────────────
+function buildTicker(){
+  const items=[
+    {t:'▲',lbl:'RISK IDX  61.4  +2.3',up:true},{t:'▼',lbl:'NIFTY  23,842  −0.34%',up:false},
+    {t:'▲',lbl:'USD/INR  84.21  +0.12',up:true},{t:'▲',lbl:'DIESEL  ₹103.40  +8.7%  30D',up:true},
+    {t:'▼',lbl:'FMCG SENTIMENT  −0.38  BEARISH',up:false},{t:'▲',lbl:'VENDOR_C RISK  91%  CRITICAL',up:true},
+    {t:'▲',lbl:'MONSOON DISRUPTION  0.62  HIGH',up:true},{t:'▼',lbl:'CHENNAI DEMAND  −38%  ANOMALY',up:false},
+    {t:'▲',lbl:'CRUDE OIL  $84.2/BBL  +2.1%',up:true},{t:'▼',lbl:'FMCG TRENDS SCORE  −18%  3M',up:false},
+    {t:'▲',lbl:'CHURN RISK  14 ACCOUNTS  DELHI',up:true},{t:'▲',lbl:'FORECAST DEV  −4.2%  30D',up:false},
+  ];
+  const html=[...items,...items].map(it=>`<span class="${it.up?'up':'dn'}">${it.t}</span> ${it.lbl}<span class="sep">│</span>`).join('');
+  document.getElementById('ticker-scroll').innerHTML=html;
+}
+buildTicker();
+
+// ─────────────────────────────────────────────
+// NAVIGATION
+// ─────────────────────────────────────────────
+function switchTab(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>{if(b.textContent.toLowerCase().includes(id.charAt(0)))b.classList.add('active')});
+  // Lazy-init charts
+  if(id==='forecast'&&!window._fcChartDone){initForecastCharts();window._fcChartDone=true;}
+  if(id==='signals'&&!window._sigChartDone){initSignalRiskChart();window._sigChartDone=true;}
+}
+
+// ─────────────────────────────────────────────
+// RISK GAUGE
+// ─────────────────────────────────────────────
+function initGauge(){
+  const arc=document.getElementById('gauge-arc');
+  const total=226; // half circle circumference for r=72
+  const score=61.4;
+  const offset=total-(score/100)*total;
+  const color=score>=80?'#ff3b3b':score>=60?'#ff7a00':score>=40?'#ffd700':'#00cc88';
+  setTimeout(()=>{
+    arc.style.strokeDashoffset=offset;
+    arc.style.stroke=color;
+  },300);
+}
+initGauge();
+
+// ─────────────────────────────────────────────
+// REGION BARS
+// ─────────────────────────────────────────────
+function buildRegionBars(){
+  const el=document.getElementById('region-bars');
+  const sorted=Object.entries(REGION_RISK).sort((a,b)=>b[1]-a[1]);
+  el.innerHTML=sorted.map(([r,s])=>{
+    const sev=getSev(s);
+    const c=SEV[sev].color;
+    return`<div class="region-row">
+      <span class="region-name">${r}</span>
+      <div class="region-track"><div class="region-fill" style="width:${s}%;background:linear-gradient(90deg,${c}66,${c})" data-w="${s}"></div></div>
+      <span class="region-score" style="color:${c}">${s}</span>
+      <span class="tag ${SEV[sev].cls} region-tag" style="text-align:center;font-size:8px">${SEV[sev].label}</span>
+    </div>`;
+  }).join('');
+}
+buildRegionBars();
+
+// ─────────────────────────────────────────────
+// REVENUE CHART
+// ─────────────────────────────────────────────
+function initRevChart(){
+  const ctx=document.getElementById('rev-chart').getContext('2d');
+  const n=90;const series=genSeries(n,2500000,0.065,0.035);
+  const vals=series.map(d=>d.val);
+  const anomIdx=series.map((d,i)=>d.isAnom?i:null).filter(i=>i!==null);
+  const rol=rolling(vals,7);
+  const dates=genDates(n);
+  const anomData=vals.map((v,i)=>anomIdx.includes(i)?v:null);
+  new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:dates,
+      datasets:[
+        {label:'Revenue',data:vals,borderColor:'#ffb400',borderWidth:1.5,backgroundColor:'rgba(255,180,0,.07)',fill:true,tension:.3,pointRadius:0,pointHoverRadius:3},
+        {label:'7D Avg',data:rol,borderColor:'#00cc88',borderWidth:1,borderDash:[5,3],fill:false,tension:.4,pointRadius:0},
+        {label:'Anomaly',data:anomData,type:'scatter',pointRadius:5,pointHoverRadius:7,pointBackgroundColor:'#ff3b3b',showLine:false},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#13131f',borderColor:'rgba(255,180,0,.3)',borderWidth:1,titleColor:'#5c5a57',bodyColor:'#f0ede8',titleFont:{family:'JetBrains Mono',size:9},bodyFont:{family:'JetBrains Mono',size:10},callbacks:{label:ctx=>`₹${(ctx.raw/100000).toFixed(1)}L`}}},
+      scales:{x:{ticks:{color:'#5c5a57',font:{family:'JetBrains Mono',size:8},maxRotation:0,maxTicksLimit:9},grid:{color:'rgba(255,255,255,.03)'},border:{color:'rgba(255,255,255,.06)'}},y:{ticks:{color:'#5c5a57',font:{family:'JetBrains Mono',size:8},callback:v=>`₹${(v/100000).toFixed(0)}L`},grid:{color:'rgba(255,255,255,.03)'},border:{color:'rgba(255,255,255,.06)'}}},
+    }
+  });
+}
+initRevChart();
+
+// ─────────────────────────────────────────────
+// RADAR CHART
+// ─────────────────────────────────────────────
+function initRadarChart(){
+  const ctx=document.getElementById('radar-chart').getContext('2d');
+  new Chart(ctx,{
+    type:'radar',
+    data:{
+      labels:['Vendor Risk','Demand','Logistics','Customer','Market','Finance'],
+      datasets:[{label:'Risk',data:[78,45,62,55,41,38],borderColor:'#ffb400',borderWidth:1.5,backgroundColor:'rgba(255,180,0,.1)',pointBackgroundColor:'#ffb400',pointRadius:3}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{r:{
+        ticks:{display:false},
+        grid:{color:'rgba(255,255,255,.07)'},
+        pointLabels:{color:'#5c5a57',font:{family:'JetBrains Mono',size:9}},
+        suggestedMin:0,suggestedMax:100,
+      }}
+    }
+  });
+}
+initRadarChart();
+
+// ─────────────────────────────────────────────
+// ALERTS
+// ─────────────────────────────────────────────
+function buildAlerts(){
+  const el=document.getElementById('alerts-list');
+  el.innerHTML=ALERTS.map((a,i)=>{
+    const s=SEV[a.sev];
+    return`<div class="alert-card fade-up" style="animation-delay:${i*60}ms" onclick="toggleAlert('ab-${a.id}')">
+      <div class="card card-${a.sev.replace('high','high').replace('medium','med').replace('critical','crit').replace('low','low')}">
+        <div class="card-body">
+          <div class="alert-hdr">
+            <div class="alert-bar" style="background:${s.color};box-shadow:0 0 8px ${s.color}44"></div>
+            <div style="flex:1;min-width:0">
+              <div class="alert-meta">
+                <span class="tag ${s.cls}">${s.label}</span>
+                <span style="font-size:9px;color:var(--t3)">${a.area.toUpperCase()}</span>
+                <span style="font-size:9px;color:var(--t3)">${a.id}</span>
+                <span style="font-size:9px;color:var(--t3);margin-left:auto">${a.ts}</span>
+              </div>
+              <div class="alert-title">${a.title}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;margin-left:10px">
+              <div class="alert-impact" style="color:${s.color}">₹${a.impact}L</div>
+              <div style="font-size:9px;color:var(--t3)">${a.conf}% conf</div>
+            </div>
+          </div>
+          <div class="alert-body" id="ab-${a.id}">
+            <p class="alert-explanation">${a.explanation}</p>
+            ${a.actions.map(r=>`<div class="reco"><span class="reco-arrow" style="color:${s.color}">→</span><span>${r}</span></div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleAlert(id){
+  const el=document.getElementById(id);
+  el.classList.toggle('open');
+}
+buildAlerts();
+
+// ─────────────────────────────────────────────
+// VENDORS
+// ─────────────────────────────────────────────
+function buildVendors(){
+  const el=document.getElementById('vendors-list');
+  el.innerHTML=VENDORS.map((v,i)=>{
+    const s=SEV[v.sev];
+    const fp=Math.round((1-v.rel/100)*100);
+    const trendColor=v.trend==='↓'?'#ff3b3b':v.trend==='↑'?'#00cc88':'#5c5a57';
+    return`<div class="vendor-row fade-up" style="animation-delay:${i*50}ms">
+      <div class="vendor-hdr">
+        <div>
+          <span class="tag ${s.cls}" style="margin-right:6px">${s.label}</span>
+          <span style="font-family:var(--display);font-size:14px;font-weight:700;color:${s.color}">${v.id}</span>
+        </div>
+        <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+          <div style="text-align:center"><div style="font-size:9px;color:var(--t3)">DEFECT RATE</div><div style="font-size:12px;font-weight:700;color:${v.defect>10?'#ff3b3b':v.defect>5?'#ff7a00':'#9b9794'}">${v.defect}%</div></div>
+          <div style="text-align:center"><div style="font-size:9px;color:var(--t3)">FAILURE PROB</div><div style="font-size:12px;font-weight:700;color:${s.color}">${fp}%</div></div>
+          <div style="text-align:center"><div style="font-size:9px;color:var(--t3)">TREND</div><div style="font-size:16px;font-weight:700;color:${trendColor}">${v.trend}</div></div>
+          <div style="font-size:9px;color:${s.color}">${v.reco}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:9px;color:var(--t3);width:70px">RELIABILITY</span>
+        <div class="vendor-bar-wrap" style="flex:1">
+          <div class="vendor-bar" style="width:${v.rel}%;background:linear-gradient(90deg,${s.color}66,${s.color})"></div>
+        </div>
+        <span style="font-size:11px;font-weight:700;width:36px;text-align:right;color:${s.color}">${v.rel}%</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+buildVendors();
+
+// ─────────────────────────────────────────────
+// SIGNALS
+// ─────────────────────────────────────────────
+const SIGNALS=[
+  {icon:'🌧️',label:'Weather Disruption',val:'0.62',unit:'',sub:'DISRUPTION INDEX',detail:'Mumbai-Pune corridor — HIGH RISK',trend:'▲',tc:'#ff7a00',color:'#ff7a00'},
+  {icon:'📰',label:'News Sentiment',val:'−0.38',unit:'',sub:'BEARISH',detail:'67 negative articles / 72h',trend:'▼',tc:'#ff3b3b',color:'#ff3b3b'},
+  {icon:'⛽',label:'Diesel Price',val:'103.4',unit:'₹/L',sub:'LOGISTICS COST +28%',detail:'+8.7% in 21 days',trend:'▲',tc:'#ffd700',color:'#ffd700'},
+  {icon:'💱',label:'USD / INR',val:'84.21',unit:'',sub:'IMPORT RISK HIGH',detail:'+0.12 today · 3-month high',trend:'▲',tc:'#ff7a00',color:'#ff7a00'},
+  {icon:'📈',label:'Google Trends',val:'67',unit:'/100',sub:'DEMAND SIGNAL WEAK',detail:'FMCG interest −18% (3M)',trend:'▼',tc:'#9b9794',color:'#9b9794'},
+  {icon:'📊',label:'CPI Proxy',val:'5.8',unit:'%',sub:'INFLATION PRESSURE',detail:'Above RBI 4% target',trend:'▲',tc:'#ffd700',color:'#ffd700'},
+  {icon:'🌡️',label:'Temperature',val:'34.2',unit:'°C',sub:'MUMBAI',detail:'Humidity: 78% · Hazy',trend:'→',tc:'#00d4ff',color:'#00d4ff'},
+  {icon:'🏭',label:'Logistics Cost Idx',val:'1.28',unit:'',sub:'+28% FROM BASE',detail:'Base: 1.00 (Jan 2024)',trend:'▲',tc:'#ff7a00',color:'#ff7a00'},
+];
+function buildSignalGrid(){
+  const el=document.getElementById('signal-grid');
+  el.innerHTML=SIGNALS.map(s=>`
+    <div class="card sig-card fade-up">
+      <div style="display:flex;justify-content:space-between;align-items:start">
+        <span class="sig-icon">${s.icon}</span>
+        <span style="font-size:9px;color:${s.tc};font-weight:700">${s.trend}</span>
+      </div>
+      <div class="sig-lbl">${s.label}</div>
+      <div><span class="sig-val" style="color:${s.color}">${s.val}</span><span class="sig-unit">${s.unit}</span></div>
+      <div class="sig-sub" style="color:${s.color}88;font-size:9px">${s.sub}</div>
+      <div class="sig-detail">${s.detail}</div>
+    </div>
+  `).join('');
+}
+buildSignalGrid();
+
+const SHAP_DATA=[
+  {label:'Vendor Reliability',val:0.31,color:'#ff3b3b'},
+  {label:'Internal Anomaly Score',val:0.24,color:'#ff7a00'},
+  {label:'Forecast Deviation',val:0.18,color:'#ffd700'},
+  {label:'News Sentiment',val:0.14,color:'#ffb400'},
+  {label:'Weather Disruption',val:0.08,color:'#9b9794'},
+  {label:'Logistics Cost Index',val:0.05,color:'#5c5a57'},
+];
+function buildSHAP(){
+  const el=document.getElementById('shap-bars');
+  el.innerHTML=SHAP_DATA.map(s=>`
+    <div class="shap-row">
+      <span class="shap-label">${s.label}</span>
+      <div class="shap-track">
+        <div class="shap-fill" style="width:${s.val*100/0.31*85}%;background:linear-gradient(90deg,${s.color}88,${s.color})"></div>
+      </div>
+      <span class="shap-val" style="color:${s.color}">${(s.val*100).toFixed(0)}%</span>
+    </div>
+  `).join('');
+}
+buildSHAP();
+
+function initSignalRiskChart(){
+  const ctx=document.getElementById('risk-trend-chart').getContext('2d');
+  const n=60;const series=genSeries(n,55,0.08);
+  const vals=series.map(d=>Math.min(100,Math.max(0,d.val/25000)));
+  const dates=genDates(n);
+  new Chart(ctx,{type:'line',data:{labels:dates,datasets:[{label:'Risk Score',data:vals,borderColor:'#ff7a00',borderWidth:1.5,backgroundColor:'rgba(255,122,0,.08)',fill:true,tension:.4,pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#13131f',borderColor:'rgba(255,180,0,.3)',borderWidth:1,titleColor:'#5c5a57',bodyColor:'#f0ede8',titleFont:{family:'JetBrains Mono',size:9},bodyFont:{family:'JetBrains Mono',size:10}}},scales:{x:{ticks:{color:'#5c5a57',font:{family:'JetBrains Mono',size:8},maxTicksLimit:8},grid:{color:'rgba(255,255,255,.03)'},border:{color:'rgba(255,255,255,.06)'}},y:{min:0,max:100,ticks:{color:'#5c5a57',font:{family:'JetBrains Mono',size:8}},grid:{color:'rgba(255,255,255,.03)'},border:{color:'rgba(255,255,255,.06)'}}}}});
+}
+
+// ─────────────────────────────────────────────
+// FORECAST CHARTS
+// ─────────────────────────────────────────────
+let forecastChart=null;
+function updateForecastChart(){
+  if(forecastChart)forecastChart.destroy();
+  const ctx=document.getElementById('forecast-chart').getContext('2d');
+  const region=document.getElementById('region-select').value;
+  const base=({Mumbai:2500000,Delhi:2200000,Bangalore:1800000,Chennai:1600000,Kolkata:1500000,Hyderabad:1700000,Pune:1300000,Ahmedabad:1200000})[region]||2000000;
+  const hist=genSeries(60,base,0.065);
+  const histVals=hist.map(d=>d.val);
+  const lastVal=histVals[histVals.length-1];
+  const fcast=genSeries(30,lastVal*0.958,0.04);
+  const fcastVals=fcast.map(d=>d.val);
+  const allLabels=[...genDates(60),...Array.from({length:30},(_,i)=>`F+${i+1}`)];
+  const histData=[...histVals,...Array(30).fill(null)];
+  const fcastData=[...Array(60).fill(null),...fcastVals];
+  const upperData=[...Array(60).fill(null),...fcastVals.map(v=>Math.round(v*1.09))];
+  const lowerData=[...Array(60).fill(null),...fcastVals.map(v=>Math.round(v*0.91))];
+  forecastChart=new Chart(ctx,{type:'line',data:{labels:allLabels,datasets:[
+    {label:'Upper Band',data:upperData,borderColor:'transparent',backgroundColor:'rgba(0,204,136,.06)',fill:'+1',tension:.4,pointRadius:0},
+    {label:'Lower Band',data:lowerData,borderColor:'transparent',backgroundColor:'rgba(0,204,136,.06)',fill:false,tension:.4,pointRadius:0},
+    {label:'Historical',data:histData,borderColor:'#ffb400',borderWidth:1.5,backgroundColor:'rgba(255,180,0,.06)',fill:true,tension:.4,pointRadius:0},
+    {label:'Forecast',data:fcastData,borderColor:'#00cc88',borderWidth:1.5,borderDash:[6,3],fill:false,tension:.4,pointRadius:0},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#13131f',borderColor:'rgba(255,180,0,.3)',borderWidth:1,titleColor:'#5c5a57',bodyColor:'#f0ede8',titleFont:{family:'JetBrains Mono',size:9},bodyFont:{family:'JetBrains Mono',size:10},callbacks:{label:ctx=>ctx.dataset.label!=='Upper Band'&&ctx.dataset.label!=='Lower Band'?`${ctx.dataset.label}: ₹${ctx.raw?Math.round(ctx.raw/100000)+'L':'—'}`:null}}},scales:{x:{ticks:{color:'#5c5a57',font:{family:'JetBrains Mono',size:8},maxTicksLimit:10},grid:{color:'rgba(255,255,255,.03)'},border:{color:'rgba(255,255,255,.06)'}},y:{ticks:{color:'#5c5a57',font:{family:'JetBrains Mono',size:8},callback:v=>`₹${(v/100000).toFixed(0)}L`},grid:{color:'rgba(255,255,255,.03)'},border:{color:'rgba(255,255,255,.06)'}}}},plugins:[{beforeDraw(chart){const ctx=chart.ctx;const xScale=chart.scales.x;const x=xScale.getPixelForValue(60);ctx.save();ctx.strokeStyle='rgba(255,180,0,.25)';ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,chart.chartArea.top);ctx.lineTo(x,chart.chartArea.bottom);ctx.stroke();ctx.fillStyle='rgba(255,180,0,.5)';ctx.font='8px JetBrains Mono';ctx.fillText('▶ FORECAST',x+4,chart.chartArea.top+12);ctx.restore();}}]});
+}
+function initForecastCharts(){
+  updateForecastChart();
+  // Category chart
+  const cctx=document.getElementById('cat-chart').getContext('2d');
+  new Chart(cctx,{type:'bar',data:{labels:['FMCG-Beverage','FMCG-Food','FMCG-Home Care','FMCG-Personal','FMCG-Health'],datasets:[{label:'Risk Score',data:[68,45,52,38,31],backgroundColor:['rgba(255,59,59,.7)','rgba(255,122,0,.7)','rgba(255,122,0,.7)','rgba(255,215,0,.7)','rgba(0,204,136,.7)'],borderColor:['#ff3b3b','#ff7a00','#ff7a00','#ffd700','#00cc88'],borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{min:0,max:100,ticks:{color:'#5c5a57',font:{family:'JetBrains Mono',size:8}},grid:{color:'rgba(255,255,255,.03)'},border:{color:'rgba(255,255,255,.06)'}},y:{ticks:{color:'#9b9794',font:{family:'JetBrains Mono',size:8}},grid:{display:false},border:{display:false}}}}});
+  // Anomaly chart
+  const actx=document.getElementById('anom-chart').getContext('2d');
+  const weeks=['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'];
+  new Chart(actx,{type:'bar',data:{labels:weeks,datasets:[{label:'Anomalies',data:[2,1,3,1,0,2,5,3,1,4,2,3],backgroundColor:'rgba(255,122,0,.5)',borderColor:'#ff7a00',borderWidth:1,borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#5c5a57',font:{family:'JetBrains Mono',size:8}},grid:{display:false},border:{color:'rgba(255,255,255,.06)'}},y:{ticks:{color:'#5c5a57',font:{family:'JetBrains Mono',size:8}},grid:{color:'rgba(255,255,255,.03)'},border:{color:'rgba(255,255,255,.06)'},beginAtZero:true}}}});
+}
+
+// ─────────────────────────────────────────────
+// SCENARIO
+// ─────────────────────────────────────────────
+function updateScenario(){
+  const fuel=parseFloat(document.getElementById('sc-fuel').value);
+  const weather=parseFloat(document.getElementById('sc-weather').value)/100;
+  const sentiment=parseFloat(document.getElementById('sc-sentiment').value)/100;
+  const forex=parseFloat(document.getElementById('sc-forex').value);
+  const vrel=parseFloat(document.getElementById('sc-vrel').value)/100;
+  const trends=parseFloat(document.getElementById('sc-trends').value)/100;
+  document.getElementById('fuel-val').textContent=fuel.toFixed(0);
+  document.getElementById('weather-val').textContent=weather.toFixed(2);
+  document.getElementById('sentiment-val').textContent=sentiment.toFixed(2);
+  document.getElementById('forex-val').textContent=forex.toFixed(1);
+  document.getElementById('vrel-val').textContent=(vrel*100).toFixed(0);
+  document.getElementById('trends-val').textContent=(trends*100).toFixed(0);
+  const base=45;
+  const delta=(fuel-95)*0.5+weather*22+Math.max(0,-sentiment)*14+(forex-83)*2.5+(1-vrel)*28-trends*8;
+  const score=Math.min(100,Math.max(0,base+delta));
+  const sev=getSev(score);
+  const s=SEV[sev];
+  const impact=Math.round(50000000*(score/100)*0.15/100000);
+  const d=score-base;
+  document.getElementById('sc-score').textContent=score.toFixed(1);
+  document.getElementById('sc-score').style.color=s.color;
+  document.getElementById('sc-arrow').textContent=d>0?`↑ +${d.toFixed(1)} from baseline`:(d<0?`↓ ${d.toFixed(1)} from baseline`:'→ at baseline');
+  document.getElementById('sc-arrow').style.color=d>5?'#ff3b3b':d<-5?'#00cc88':'#9b9794';
+  document.getElementById('sc-severity').className=`tag ${s.cls}`;
+  document.getElementById('sc-severity').textContent=s.label;
+  document.getElementById('sc-impact').textContent=`₹${impact}L`;
+  document.getElementById('sc-impact').style.color=s.color;
+  const drivers=[];
+  if(fuel>100)drivers.push(`Diesel at ₹${fuel}/L — logistics cost elevated`);
+  if(weather>0.5)drivers.push(`Weather disruption index ${weather.toFixed(2)} — HIGH logistics risk`);
+  if(sentiment<-0.2)drivers.push(`News sentiment ${sentiment.toFixed(2)} — negative market signal`);
+  if(forex>83.8)drivers.push(`USD/INR at ${forex.toFixed(1)} — import cost pressure`);
+  if(vrel<0.65)drivers.push(`Vendor reliability at ${(vrel*100).toFixed(0)}% — supply chain risk`);
+  if(trends<0.45)drivers.push(`Demand trends score ${(trends*100).toFixed(0)} — consumer interest declining`);
+  document.getElementById('sc-drivers').innerHTML=drivers.length?drivers.map(d=>`<div class="reco"><span class="reco-arrow" style="color:${s.color}">→</span><span style="font-size:10px">${d}</span></div>`).join(''):`<div style="font-size:10px;color:var(--t3)">No significant risk drivers at current parameters</div>`;
+  const recos=[];
+  if(fuel>100)recos.push('Lock freight rates before further fuel escalation');
+  if(weather>0.4)recos.push('Pre-position 20% buffer inventory in affected corridor');
+  if(vrel<0.7)recos.push('Activate secondary vendor contracts immediately');
+  if(score>70)recos.push('Escalate to C-suite — convene risk committee within 24h');
+  document.getElementById('sc-recos').innerHTML=recos.length?recos.map(r=>`<div class="reco"><span class="reco-arrow" style="color:${s.color}">→</span><span style="font-size:10px">${r}</span></div>`).join(''):`<div style="font-size:10px;color:var(--t2)">Continue standard monitoring protocols</div>`;
+}
+updateScenario();
+
+// ─────────────────────────────────────────────
+// ASK EWASP
+// ─────────────────────────────────────────────
+function askEWASP(q){
+  if(!q||!q.trim())return;
+  document.getElementById('ask-input').value='';
+  const hist=document.getElementById('chat-history');
+  const qDiv=document.createElement('div');
+  qDiv.className='chat-q fade-up';
+  qDiv.innerHTML=`<span class="chat-prompt">&gt;</span><span class="chat-q-text">${q}</span>`;
+  hist.appendChild(qDiv);
+  const typing=document.createElement('div');
+  typing.className='chat-q fade-up';
+  typing.innerHTML=`<span class="chat-prompt blink" style="font-size:9px">PROCESSING █</span>`;
+  hist.appendChild(typing);
+  hist.scrollTop=hist.scrollHeight;
+  setTimeout(()=>{
+    hist.removeChild(typing);
+    const key=Object.keys(MOCK_ANSWERS).find(k=>q.toLowerCase().includes(k))||'urgent';
+    const ans=MOCK_ANSWERS[key];
+    const aDiv=document.createElement('div');
+    aDiv.className='chat-a fade-up';
+    aDiv.innerHTML=`<div class="chat-a-text">${ans}</div>`;
+    hist.appendChild(aDiv);
+    hist.scrollTop=hist.scrollHeight;
+  },800+Math.random()*400);
+}
+
+// ─────────────────────────────────────────────
+// LIVE UPDATES
+// ─────────────────────────────────────────────
+// Micro-live: risk score drift
+setInterval(()=>{
+  const score=document.getElementById('gauge-score');
+  const cur=parseFloat(score.textContent);
+  const next=(cur+(Math.random()-.48)*0.4).toFixed(1);
+  const clamped=Math.min(100,Math.max(0,parseFloat(next)));
+  score.textContent=clamped.toFixed(1);
+  const arc=document.getElementById('gauge-arc');
+  const total=226;
+  arc.style.strokeDashoffset=total-(clamped/100)*total;
+},5000);
+</script>
+</body>
+</html>

@@ -16,7 +16,7 @@ echo -e "${AMBER}  ██╔══╝  ╚════╝██║███╗�
 echo -e "${AMBER}  ███████╗      ╚███╔███╔╝██║  ██║███████║██║     ${NC}"
 echo -e "${AMBER}  ╚══════╝       ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝╚═╝     ${NC}"
 echo ""
-echo -e "${GREEN}  Enterprise Early-Warning & Signal Detection Platform${NC}"
+echo -e "${GREEN}  P2P Transactions Early-Warning & Fraud Intelligence${NC}"
 echo -e "  ──────────────────────────────────────────────────"
 echo ""
 
@@ -24,10 +24,10 @@ MODE=${1:-"full"}
 
 # ── OPTION 1: Standalone HTML (no install needed) ──────────────
 if [ "$MODE" = "html" ]; then
-    echo -e "${GREEN}✓ Opening E-WASP standalone analyzer (no setup needed)...${NC}"
-    if command -v xdg-open &>/dev/null; then xdg-open ewasp_analyzer.html
-    elif command -v open &>/dev/null; then open ewasp_analyzer.html
-    else echo -e "${YELLOW}Open ewasp_analyzer.html in your browser${NC}"; fi
+    echo -e "${GREEN}✓ Opening P2P EWAS standalone demo (no setup needed)...${NC}"
+    if command -v xdg-open &>/dev/null; then xdg-open ewasp_demo.html
+    elif command -v open &>/dev/null; then open ewasp_demo.html
+    else echo -e "${YELLOW}Open ewasp_demo.html in your browser${NC}"; fi
     exit 0
 fi
 
@@ -87,15 +87,14 @@ FRONTEND_PID=$!
 echo -e "  ${GREEN}✓ Frontend started (PID: $FRONTEND_PID)${NC}"
 cd ..
 
-echo -e "\n${AMBER}[3/3] E-WASP is ready!${NC}"
+echo -e "\n${AMBER}[3/3] P2P EWAS is ready!${NC}"
 echo ""
 echo -e "  ${GREEN}✅ RUNNING:${NC}"
 echo -e "  ┌─────────────────────────────────────────────┐"
 echo -e "  │  Frontend:       ${AMBER}http://localhost:3000${NC}       │"
 echo -e "  │  API:            ${AMBER}http://localhost:8000${NC}       │"
 echo -e "  │  Docs:           ${AMBER}http://localhost:8000/docs${NC}  │"
-echo -e "  │  Upload API:     POST /api/upload/analyze   │"
-echo -e "  │  Standalone:     ewasp_analyzer.html        │"
+echo -e "  │  Standalone:     ewasp_demo.html            │"
 echo -e "  └─────────────────────────────────────────────┘"
 echo ""
 echo -e "  Press ${RED}Ctrl+C${NC} to stop all services"

@@ -1,0 +1,15 @@
+{
+  "model": "TF-IDF + LightGBM",
+  "task": "scam_text_classification",
+  "tfidf_features": 10000,
+  "train_samples": 4459,
+  "test_samples": 1115,
+  "metrics": {
+    "accuracy": 1.0,
+    "auc_roc": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "trained_at": "2026-04-26T12:27:28.071862"
+}

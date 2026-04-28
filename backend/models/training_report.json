@@ -1,0 +1,129 @@
+{
+  "training_run": "2026-04-26T12:27:37.246860",
+  "models": {
+    "phishing": {
+      "model": "LightGBM",
+      "task": "phishing_url_classification",
+      "features": [
+        "url_length",
+        "n_dots",
+        "n_hyphens",
+        "n_underscores",
+        "n_slashes",
+        "n_qmarks",
+        "n_amps",
+        "n_equals",
+        "n_at",
+        "n_digits",
+        "has_ip",
+        "has_https",
+        "domain_length",
+        "path_length",
+        "subdomain_count",
+        "digit_ratio",
+        "special_char_ratio",
+        "tld_risk",
+        "has_port",
+        "entropy",
+        "vowel_ratio",
+        "consonant_ratio",
+        "is_shortened",
+        "has_brand_in_path"
+      ],
+      "n_features": 24,
+      "train_samples": 8844,
+      "test_samples": 2211,
+      "metrics": {
+        "accuracy": 0.9986,
+        "auc_roc": 1.0,
+        "precision": 0.9982,
+        "recall": 0.9991,
+        "f1": 0.9986
+      },
+      "trained_at": "2026-04-26T12:27:27.717120"
+    },
+    "text_classifier": {
+      "model": "TF-IDF + LightGBM",
+      "task": "scam_text_classification",
+      "tfidf_features": 10000,
+      "train_samples": 4459,
+      "test_samples": 1115,
+      "metrics": {
+        "accuracy": 1.0,
+        "auc_roc": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "trained_at": "2026-04-26T12:27:28.071862"
+    },
+    "fraud_detector": {
+      "model": "LightGBM",
+      "task": "p2p_fraud_detection",
+      "features": [
+        "amount",
+        "hour_of_day",
+        "day_of_week",
+        "sender_account_age_days",
+        "receiver_account_age_days",
+        "sender_txn_count_30d",
+        "receiver_txn_count_30d",
+        "is_new_receiver",
+        "same_device_as_usual",
+        "velocity_1h",
+        "velocity_24h",
+        "cross_border"
+      ],
+      "n_features": 12,
+      "train_samples": 80000,
+      "test_samples": 20000,
+      "fraud_rate": 0.035,
+      "metrics": {
+        "accuracy": 1.0,
+        "auc_roc": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0
+      },
+      "confusion_matrix": [
+        [
+          19300,
+          0
+        ],
+        [
+          0,
+          700
+        ]
+      ],
+      "trained_at": "2026-04-26T12:27:32.364639"
+    },
+    "anomaly_detector": {
+      "model": "IsolationForest",
+      "task": "anomaly_detection",
+      "features": [
+        "amount",
+        "hour_of_day",
+        "day_of_week",
+        "sender_account_age_days",
+        "receiver_account_age_days",
+        "sender_txn_count_30d",
+        "receiver_txn_count_30d",
+        "is_new_receiver",
+        "same_device_as_usual",
+        "velocity_1h",
+        "velocity_24h",
+        "cross_border"
+      ],
+      "n_features": 12,
+      "contamination": 0.035,
+      "total_samples": 100000,
+      "anomalies_flagged": 3500,
+      "metrics_vs_fraud_labels": {
+        "precision": 0.908,
+        "recall": 0.908,
+        "f1": 0.908
+      },
+      "trained_at": "2026-04-26T12:27:37.234965"
+    }
+  }
+}

@@ -1,311 +1,117 @@
-# 🦅 E-WASP
-## Enterprise Early-Warning & Signal Detection Platform
+# 🦅 P2P-Transactions-EWAPS
+## Enterprise-Grade P2P Payments Early-Warning & Fraud Intelligence System
 
-> **Multi-signal decision intelligence system** combining internal enterprise data, external macroeconomic signals, behavioral patterns, and market intelligence — to detect risks before humans can see them.
+> **Decision Intelligence Platform** designed to detect, track, and mitigate P2P payment fraud across multiple signal layers: PSR Benchmarks, Scam Typologies, and Brand Impersonation.
 
 ```
-Not just anomaly detection.
-Not just a dashboard.
-A multi-layer AI engine designed like Palantir Foundry meets Bloomberg Terminal.
+AI-Driven. 
+Multi-Signal. 
+Investor-Ready.
+Built for the future of P2P Trust.
 ```
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture: The 3-Pillar Engine
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          E-WASP SYSTEM                              │
-├────────────────────┬────────────────────┬───────────────────────────┤
-│   FRONTEND         │   BACKEND (FastAPI) │   DATA LAYER             │
-│   Next.js 14       │   /api/*            │   PostgreSQL 16          │
-│   Tailwind CSS     │   /ml/              │   Redis Cache            │
-│   Recharts         │   /services/        │   ML Model Registry      │
-│   Bloomberg UI     │   /external/        │                          │
-├────────────────────┴────────────────────┴───────────────────────────┤
-│                        ML ENGINE (5 Layers)                         │
-│  L1: Isolation Forest + LOF  │  L2: Prophet + ARIMA                │
-│  L3: Signal Fusion (XGBoost) │  L4: Risk Scoring Engine            │
-│  L5: SHAP Explainability                                            │
-├─────────────────────────────────────────────────────────────────────┤
-│                    EXTERNAL SIGNALS                                 │
-│  OpenWeatherMap  │  NewsAPI + NLP  │  Google Trends  │  Forex API  │
-└─────────────────────────────────────────────────────────────────────┘
-```
+E-WAPS (Early Warning & Payment Security) is built on three specialized intelligence pillars:
+
+| Pillar | Focus | Technology Stack |
+|--------|-------|------------------|
+| **M1: PSR Benchmark** | Regulatory z-score analysis per PSP | Pandas, SciPy, Statistical Modeling |
+| **M2: Scam Typology Radar** | NLP-driven detection of narrative shifts | BERTopic, Sentence-Transformers, NLP |
+| **M3: Phishing Watchtower** | Real-time brand impersonation monitoring | Levenshtein Distance, Phishing-ML |
+
+---
+
+## 🚀 Vision & Technology
+
+### Layer 1: Anomaly Detection
+Using **Isolation Forest** ensembles to detect suspicious transaction patterns in real-time, identifying high-velocity transfers and new-receiver anomalies.
+
+### Layer 2: Narrative Intelligence
+A proprietary NLP engine that analyzes complaint data (CFPB, r/Scams) to detect "Typology Drift" — spotting new scam narratives (like "Fake Job + Check Deposit") before they go viral.
+
+### Layer 3: Brand Watchtower
+A defensive layer that monitors DNS registrations for homoglyphs and lookalike domains (e.g., `monz0-support.top`), providing early warning for phishing infrastructure staging.
+
+---
+
+## 📊 Project Showcase
+
+### **[M1] PSR Benchmark Module**
+- Automated z-score calculation for UK Payment Systems Regulator (PSR) data.
+- Comparative risk ranking of PSPs (Monzo, Barclays, Revolut, etc.).
+- Trajectory tracking for fraud-sent vs. reimbursement rates.
+
+### **[M2] Scam Typology Radar**
+- Live cluster visualization of emerging scam narratives.
+- Velocity tracking (e.g., "78% increase in Romace-Scam pivot to Gift Cards").
+- Automated "Recommended Actions" for fraud operations teams.
+
+### **[M3] Brand Impersonation Watchtower**
+- Proactive domain scanning for 15+ global finance brands.
+- Risk-weighted scoring based on TLD, Age, and Metadata.
+- Automated phishing kit identification.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Backend**: FastAPI (Python 3.11+), Scikit-Learn, Pandas, Transformers.
+- **Frontend**: Next.js 14, Tailwind CSS, Recharts, Lucide Icons.
+- **Design**: Bloomberg Terminal-inspired Dark Mode (High Information Density).
+- **Infrastructure**: Docker & Docker Compose Support.
 
 ---
 
 ## 🚀 Quick Start
 
-### Option 1: Docker (Recommended — One Command)
+### 1. Requirements
+- Python 3.10+
+- Node.js 18+
+- Docker (Optional for containerized run)
 
+### 2. Setup
 ```bash
-git clone https://github.com/yourorg/ewasp
+# Clone the repository
+git clone https://github.com/ShreyashN16/P2P-Transactions-EWAPS-_-PBL.git
 cd ewasp
 
-# Copy env template
-cp .env.example .env
-
-# Edit API keys (optional — system works without them via mocks)
-# OPENWEATHER_API_KEY=your_key
-# NEWS_API_KEY=your_key
-# FOREX_API_KEY=your_key
-
-# Launch everything
-docker compose up -d
-
-# Access
-# Frontend: http://localhost:3000
-# API Docs: http://localhost:8000/docs
-```
-
-### Option 2: Local Development
-
-**Backend:**
-```bash
+# Start Backend
 cd backend
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
 pip install -r requirements.txt
+uvicorn main:app --port 8000 --reload
 
-# Generate dataset
-python -c "from data.dataset_generator import generate_all_datasets; generate_all_datasets()"
-
-# Start API
-uvicorn main:app --reload --port 8000
-```
-
-**Frontend:**
-```bash
+# Start Frontend (New terminal)
 cd frontend
 npm install
 npm run dev
-# Opens at http://localhost:3000
 ```
+
+### 3. Access
+- **Dashboard**: `http://localhost:3000`
+- **Scanner**: `http://localhost:3000/scanner`
+- **API Docs**: `http://localhost:8000/docs`
 
 ---
 
-## 🧠 ML System Design
-
-### Layer 1: Anomaly Detection
-```python
-# Isolation Forest (primary) + Local Outlier Factor (ensemble)
-detector = AnomalyDetector(contamination=0.05)
-detector.fit(sales_features)
-results = detector.detect(current_data)
-# Returns: anomaly_score (0-1), confidence, affected_features
-```
-
-### Layer 2: Forecasting
-```python
-# Prophet with multiplicative seasonality (captures Indian festive patterns)
-forecaster = ForecastingEngine(horizon_days=30)
-forecast = forecaster.forecast(revenue_series, "revenue")
-# Returns: values, confidence intervals, trend direction
-```
-
-### Layer 3: Signal Fusion
-```python
-# XGBoost trained on combined internal + external signals
-# SHAP values for explainability
-fusion = SignalFusionModel()
-output = fusion.predict_risk({
-    "internal_anomaly_score": 0.72,
-    "vendor_reliability_index": 0.53,
-    "weather_disruption_index": 0.62,
-    "news_sentiment_score": -0.38,
-    ...
-})
-# Returns: risk_probability, signal_weights (SHAP), dominant_signal
-```
-
-### Layer 4: Risk Scoring
-```python
-# Weighted combination: anomaly (35%) + fusion (45%) + forecast (20%)
-risk = RiskScoringEngine().compute_score(
-    anomaly_result, forecast_result, fusion_output,
-    baseline_revenue_inr=50_000_000
-)
-# Returns: 0-100 score, severity, confidence, impact_inr, recommendations
-```
-
-### Layer 5: SHAP Explainability
-Every alert includes top 3 contributing features with SHAP values, enabling:
-- Feature attribution
-- "Why did this alert fire?" explanation
-- Natural language explanation generation
-
----
-
-## 📊 Data Pipeline
-
-```
-Raw Data → Feature Engineering → ML Processing → Risk Scoring → Alert Generation
-   ↑              ↑                    ↑                ↑               ↓
- CSV/DB    Rolling Averages      Isolation Forest    Weighted       Alert Cards
-          Trend Slope           Prophet Forecast    Fusion Model   Recommendations
-          Volatility Index      XGBoost Fusion      SHAP Values    Executive Summary
-          Vendor Scores
-```
-
-### Engineered Features
-| Feature | Description | Impact |
-|---------|-------------|--------|
-| `revenue_7d_avg` | 7-day rolling average | Smooths noise |
-| `trend_slope_7d` | Linear regression slope | Direction signal |
-| `volatility_index` | Std/Mean ratio | Risk intensity |
-| `anomaly_freq_30d` | Count of anomalies (30d) | Pattern detection |
-| `demand_elasticity` | Units vs Revenue change | Pricing signal |
-| `vendor_failure_prob` | 1 - reliability_score | Supply risk |
-| `region_risk_index` | Composite regional score | Geographic risk |
-
----
-
-## 🌍 External Signal Integration
-
-| Signal | Source | Impact |
-|--------|--------|--------|
-| Weather | OpenWeatherMap API | Logistics disruption index |
-| News Sentiment | NewsAPI + TextBlob NLP | Market confidence |
-| Google Trends | pytrends | Demand forecasting |
-| Fuel Prices | petrolpriceindia.com (scraped) | Logistics cost |
-| USD/INR | exchangerate-api | Import cost exposure |
-| CPI/Inflation | Static dataset | Purchasing power |
-
-**API Keys Setup:**
-```bash
-OPENWEATHER_API_KEY=  # Free: openweathermap.org
-NEWS_API_KEY=         # Free: newsapi.org (100 req/day)
-FOREX_API_KEY=        # Free: exchangerate-api.com
-```
-All external signals fall back to realistic mock data when keys unavailable.
-
----
-
-## 🎯 API Reference
-
-```
-GET  /api/dashboard/overview        → Overall risk summary + KPIs
-GET  /api/alerts                    → Alert list with filtering
-GET  /api/risk/score?region=Mumbai  → Regional risk score
-GET  /api/timeseries/{metric}       → Time series data
-GET  /api/external-signals          → Real-time external signals
-GET  /api/vendors                   → Vendor risk analysis
-GET  /api/regions/heatmap           → India region risk map
-GET  /api/report/executive-summary  → C-suite summary report
-POST /api/ask-ewasp                 → AI assistant query
-POST /api/scenario/simulate         → What-if scenario simulation
-```
-
-Full interactive docs: `http://localhost:8000/docs`
-
----
-
-## 🎨 Frontend Features
-
-- **Bloomberg Terminal Dark Theme** — JetBrains Mono + Syne typography
-- **Live Risk Gauge** — SVG arc gauge with severity color coding
-- **Alert Intelligence Cards** — Expandable with SHAP explanations
-- **5-Tab Navigation** — Overview / Alerts / Vendors / Signals / Forecast
-- **Signal Fusion Visualization** — SHAP contribution bar chart
-- **Ask E-WASP** — AI terminal chat with quick queries
-- **Region Risk Bars** — India-wide comparative risk
-- **Live Ticker** — Real-time signal streaming simulation
-- **Scenario Simulator** — What-if analysis interface
-
----
-
-## 🚢 Deployment
-
-### Frontend → Vercel
-```bash
-cd frontend
-npx vercel --prod
-# Set NEXT_PUBLIC_API_URL=https://your-backend.render.com
-```
-
-### Backend → Render
-```yaml
-# render.yaml
-services:
-  - type: web
-    name: ewasp-api
-    env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
-    envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: ewasp-db
-          property: connectionString
-```
-
-### Database → Supabase
-```bash
-# Get connection string from Supabase dashboard
-# Run infra/init.sql in Supabase SQL editor
-```
-
----
-
-## 📁 Project Structure
+## 📁 Repository Structure
 
 ```
 ewasp/
-├── backend/
-│   ├── main.py                    # FastAPI app + all routes
-│   ├── requirements.txt
-│   ├── Dockerfile
-│   ├── ml/
-│   │   └── engine.py              # 5-layer ML pipeline
-│   ├── data/
-│   │   └── dataset_generator.py   # Realistic FMCG dataset
-│   ├── external/
-│   │   └── signals.py             # External API integrations
-│   └── services/                  # Business logic layer
-├── frontend/
-│   ├── app/
-│   │   ├── layout.tsx             # Root layout
-│   │   ├── page.tsx               # Main dashboard
-│   │   └── globals.css            # Bloomberg terminal theme
-│   ├── package.json
-│   ├── next.config.js
-│   └── tailwind.config.js
-├── infra/
-│   ├── init.sql                   # DB schema
-│   └── nginx.conf                 # Reverse proxy
-├── docker-compose.yml
-└── README.md
+├── backend/               # FastAPI Production API
+│   ├── ml/                # ML Models & Logic
+│   ├── data/              # Dataset Generation Scripts
+│   └── external/          # External Signal Integration
+├── frontend/              # Next.js 14 PWA
+│   ├── app/               # App Router & Routes
+│   └── components/        # Shared UI Components
+├── data/                  # Synthetic training datasets
+├── infra/                 # Docker & DB Configuration
+└── README.md              # Project Intelligence
 ```
 
 ---
 
-## 🔮 Roadmap (Next Steps)
-
-- [ ] **SHAP Waterfall charts** — Per-alert feature visualization
-- [ ] **India Geo Heatmap** — Leaflet.js choropleth map
-- [ ] **Real-time WebSockets** — Live alert streaming
-- [ ] **Mobile App** — React Native version
-- [ ] **LLM Integration** — GPT-4/Claude for Ask E-WASP
-- [ ] **Email/Slack Alerts** — Push notifications for critical events
-- [ ] **Multi-tenant** — Enterprise SaaS with org isolation
-- [ ] **Audit Trail** — Full compliance logging
-
----
-
-## 🏆 What Makes E-WASP Different
-
-| Standard ML Dashboard | E-WASP |
-|----------------------|--------|
-| Single data source | Multi-source fusion (8+ signals) |
-| Anomaly detection only | 5-layer intelligence engine |
-| Shows the problem | Explains + recommends action |
-| Historical charts | Forward-looking risk probability |
-| Generic visualization | Bloomberg Terminal-grade UI |
-| Black-box AI | SHAP explainability on every alert |
-
----
-
-*Built to be pitched to JPMorgan, UBS, American Express.*
-*Not a college project — a startup-ready intelligence platform.*
+*Developed for the P2P-Transactions-EWAPS PBL. Designed for scale, explainability, and enterprise-grade fraud intelligence.*

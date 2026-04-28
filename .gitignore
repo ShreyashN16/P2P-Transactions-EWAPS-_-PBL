@@ -21,3 +21,15 @@ coverage/
 # General
 *.sqlite3
 *.db
+*.csv
+*.joblib
+*.pkl
+*.parquet
+dataset/
+training/
+models/*.joblib
+models/*.pkl
+backend/models/*.joblib
+backend/models/*.pkl
+data/training/**/*.csv
+data/reference/**/*.csv

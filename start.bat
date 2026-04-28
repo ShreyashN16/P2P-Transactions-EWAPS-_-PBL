@@ -11,7 +11,7 @@ echo  ██╔══╝  ╚════╝██║███╗██║██
 echo  ███████╗      ╚███╔███╔╝██║  ██║███████║██║
 echo  ╚══════╝       ╚══╝╚══╝ ╚═╝  ╚═╝╚══════╝╚═╝
 echo.
-echo  Enterprise Early-Warning ^& Signal Detection Platform
+echo  P2P Transactions Early-Warning ^& Fraud Intelligence
 echo  ──────────────────────────────────────────────────
 echo.
 
@@ -20,8 +20,8 @@ IF "%MODE%"=="" SET MODE=html
 
 REM ── Standalone HTML (no install) ──────────────────────
 IF "%MODE%"=="html" (
-    echo [INFO] Opening standalone E-WASP analyzer...
-    start ewasp_analyzer.html
+    echo [INFO] Opening standalone P2P EWAS demo...
+    start ewasp_demo.html
     exit /b 0
 )
 
@@ -51,9 +51,9 @@ START "E-WASP Frontend" cmd /k "npm run dev"
 cd ..
 
 echo.
-echo [OK] E-WASP is running!
+echo [OK] P2P EWAS is running!
 echo      Frontend:  http://localhost:3000
 echo      API Docs:  http://localhost:8000/docs
-echo      Standalone: Open ewasp_analyzer.html
+echo      Standalone: Open ewasp_demo.html
 echo.
 pause

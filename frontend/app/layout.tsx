@@ -3,8 +3,8 @@ import "./globals.css";
 import { AppLayout } from "../components/Layout";
 
 export const metadata: Metadata = {
-  title: "E-WASP | Enterprise Early-Warning & Signal Detection",
-  description: "Multi-signal enterprise intelligence platform for risk detection and decision intelligence",
+  title: "P2P EWAS | Fraud Intelligence Platform",
+  description: "Enterprise-grade P2P payment early-warning system and fraud intelligence platform.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
